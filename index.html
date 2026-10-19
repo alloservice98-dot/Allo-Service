@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allo Service - Factures, Devis & Reçus Cloud</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        /* Écran PIN */
+        #pin-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .pin-box {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .pin-box h2 { margin-bottom: 10px; }
+        .pin-box p { margin-bottom: 20px; color: #64748b; font-size: 14px; }
+        .pin-box input {
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 5px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+        }
+
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .error-msg {
+            color: #dc2626;
+            margin-top: 10px;
+            font-size: 14px;
+            display: none;
+        }
+
+        #app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: none;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 { color: var(--primary-color); font-size: 24px; }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        .panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .panel h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .item-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .item-row input[type="text"] { flex: 2; }
+        .item-row input[type="number"] { flex: 1; }
+
+        .btn-danger {
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Liste de l'historique enregistré */
+        .history-list {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            background: #f8fafc;
+        }
+
+        .history-item-info { font-size: 13px; }
+        .history-item-actions { display: flex; gap: 5px; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; }
+        .btn-load { background: #0284c7; color: white; }
+        .btn-del { background: #dc2626; color: white; }
+
+        /* Aperçu du Document */
+        .preview-box {
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .company-info { font-size: 12px; color: #475569; line-height: 1.4; }
+        .company-info strong { font-size: 16px; color: var(--text-color); }
+        .doc-title { font-size: 20px; font-weight: bold; color: var(--primary-color); text-align: right; }
+
+        .client-meta { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px; }
+
+        table.preview-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        table.preview-table th, table.preview-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: left; font-size: 13px; }
+        table.preview-table th { background-color: #f1f5f9; }
+        table.preview-table td:last-child, table.preview-table th:last-child { text-align: right; }
+
+        .totals-section { margin-left: auto; width: 250px; font-size: 13px; }
+        .totals-row { display: flex; justify-content: space-between; padding: 4px 0; }
+        .totals-row.bold { font-weight: bold; border-top: 1px solid #cbd5e1; margin-top: 4px; padding-top: 6px; }
+
+        .preview-footer { margin-top: 30px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+
+        .btn-save { background-color: #16a34a; margin-top: 10px; }
+        .btn-save:hover { background-color: #15803d; }
+        .btn-print { background-color: #0284c7; margin-top: 10px; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            #pin-screen, .panel:first-child, .btn-save, .btn-print, .history-panel { display: none; }
+            #app-container { display: block; max-width: 100%; }
+            .panel { box-shadow: none; border: none; padding: 0; }
+        }
+    </style>
+
+    <!-- SDK Firebase (Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+    <!-- Écran PIN -->
+    <div id="pin-screen">
+        <div class="pin-box">
+            <h2>🔒 Accès Sécurisé</h2>
+            <p>Saisissez le code PIN pour accéder à Allo Service</p>
+            <input type="password" id="pin-input" placeholder="••••" maxlength="6">
+            <button class="btn-primary" onclick="checkPin()">Valider</button>
+            <div id="pin-error" class="error-msg">Code PIN incorrect !</div>
+        </div>
+    </div>
+
+    <!-- Application -->
+    <div id="app-container">
+        <header>
+            <h1>📑 Allo Service - Synchronisation Cloud</h1>
+        </header>
+
+        <!-- Historique synchronisé PC & Téléphone -->
+        <div class="panel history-panel">
+            <h3>☁️ Documents Sauvegardés (Accès Téléphone & PC)</h3>
+            <div id="history-container" class="history-list">
+                <p style="font-size: 13px; color: #64748b;">Chargement des documents enregistrés...</p>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <!-- Formulaire -->
+            <div class="panel">
+                <h3>✍️ Informations Générales</h3>
+                <div class="form-group">
+                    <label>Type de Document</label>
+                    <select id="doc-type" onchange="updatePreview()">
+                        <option value="Devis">Devis</option>
+                        <option value="Facture">Facture</option>
+                        <option value="Reçu d'Acompte">Reçu d'Acompte</option>
+                        <option value="Reçu de Paiement">Reçu de Paiement (Solde / Total)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nom du Client</label>
+                    <input type="text" id="client-name" placeholder="ex: Jean Dupont" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Téléphone Client</label>
+                    <input type="text" id="client-phone" placeholder="ex: 06 12 34 56 78" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Appareil / Véhicule</label>
+                    <input type="text" id="client-device" placeholder="ex: iPhone 13 / Renault Laguna" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Numéro de Document</label>
+                    <input type="text" id="doc-number" placeholder="ex: DEV-2026-001" oninput="updatePreview()">
+                </div>
+
+                <h3>🔧 Prestations & Pièces</h3>
+                <div id="items-container"></div>
+                <button class="btn-primary" style="background-color: #64748b; margin-top: 5px;" onclick="addItem()">+ Ajouter une ligne</button>
+
+                <h3 style="margin-top: 20px;">💳 Tarification & Règlement</h3>
+                <div class="form-group">
+                    <label><input type="checkbox" id="discount-check" onchange="updatePreview()"> Offre de bienvenue (-20%)</label>
+                </div>
+                <div class="form-group">
+                    <label>Acompte déjà réglé (€)</label>
+                    <input type="number" id="deposit-amount" value="0" step="0.01" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Mode de Paiement</label>
+                    <select id="payment-mode" onchange="updatePreview()">
+                        <option value="Espèces">Espèces</option>
+                        <option value="Carte Bancaire">Carte Bancaire</option>
+                        <option value="Virement">Virement</option>
+                        <option value="Paylib / Wero">Paylib / Wero</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Validité</label>
+                    <select id="doc-validity" onchange="updatePreview()">
+                        <option value="30 jours">30 jours</option>
+                        <option value="15 jours">15 jours</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Aperçu du Document -->
+            <div class="panel">
+                <h3>👁️ Aperçu du Document</h3>
+                <div class="preview-box">
+                    <div class="preview-header">
+                        <div class="company-info">
+                            <strong>Allo Service</strong><br>
+                            Réparation & Services<br>
+                            📍 2 rue des pommiers, Chevresis-Monceau (02270)<br>
+                            📞 07 43 62 16 19 | SIRET : 941 445 199 00016
+                        </div>
+                        <div class="doc-title" id="prev-doc-title">DEVIS</div>
+                    </div>
+
+                    <div class="client-meta">
+                        <div>
+                            <strong>Client :</strong> <span id="prev-client">-</span><br>
+                            <strong>Téléphone :</strong> <span id="prev-phone">-</span><br>
+                            <strong>Appareil / Véhicule :</strong> <span id="prev-device">-</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>N° :</strong> <span id="prev-number">-</span><br>
+                            <strong>Date :</strong> <span id="prev-date"></span><br>
+                            <strong>Validité :</strong> <span id="prev-validity">30 jours</span>
+                        </div>
+                    </div>
+
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Désignation</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prev-items-body"></tbody>
+                    </table>
+
+                    <div class="totals-section">
+                        <div class="totals-row"><span>Total Brut :</span><span id="prev-brut">0.00 €</span></div>
+                        <div class="totals-row" id="row-discount" style="display: none; color: #16a34a;"><span>Offre de bienvenue (-20%) :</span><span id="prev-discount">-0.00 €</span></div>
+                        <div class="totals-row bold"><span>Total Net :</span><span id="prev-net">0.00 €</span></div>
+                        <div class="totals-row"><span>Acompte réglé :</span><span id="prev-deposit">0.00 €</span></div>
+                        <div class="totals-row bold" style="color: var(--primary-color);"><span>Reste à payer :</span><span id="prev-due">0.00 €</span></div>
+                    </div>
+
+                    <div class="preview-footer">
+                        <span>Paiement par : <span id="prev-payment">Espèces</span></span><br>
+                        <span>TVA non applicable, art. 293 B du CGI</span><br>
+                        <span>Allo Service - 2 rue des pommiers, 02270 Chevresis-Monceau - SIRET : 941 445 199 00016 - Tél : 07 43 62 16 19</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary btn-save" onclick="saveDocumentToCloud()">💾 Enregistrer dans le Cloud</button>
+                <button class="btn-primary btn-print" onclick="window.print()">🖨️ Imprimer / Exporter en PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Firebase intégrée
+        const firebaseConfig = {
+            apiKey: "AIzaSyCGM_fEcaWW81qlb-8Tt-eB4DezMavPJQ4",
+            authDomain: "allo-service-7a01b.firebaseapp.com",
+            projectId: "allo-service-7a01b",
+            storageBucket: "allo-service-7a01b.firebasestorage.app",
+            messagingSenderId: "322934976905",
+            appId: "1:322934976905:web:c30148e263841f61267158"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const CORRECT_PIN = "1234"; // Votre code PIN (modifiable ici)
+
+        function checkPin() {
+            if (document.getElementById("pin-input").value === CORRECT_PIN) {
+                document.getElementById("pin-screen").style.display = "none";
+                document.getElementById("app-container").style.display = "block";
+                initApp();
+            } else {
+                document.getElementById("pin-error").style.display = "block";
+            }
+        }
+
+        let items = [{ description: "Diagnostic & Réparation", price: 0 }];
+
+        function initApp() {
+            document.getElementById("prev-date").innerText = new Date().toLocaleDateString('fr-FR');
+            renderItems();
+            loadDocumentsFromCloud();
+        }
+
+        function renderItems() {
+            const container = document.getElementById("items-container");
+            container.innerHTML = "";
+            items.forEach((item, index) => {
+                container.innerHTML += `
+                    <div class="item-row">
+                        <input type="text" value="${item.description}" placeholder="Description" oninput="updateItem(${index}, 'desc', this.value)">
+                        <input type="number" value="${item.price}" placeholder="Prix €" step="0.01" oninput="updateItem(${index}, 'price', this.value)">
+                        <button class="btn-danger" onclick="removeItem(${index})">X</button>
+                    </div>
+                `;
+            });
+            updatePreview();
+        }
+
+        function addItem() { items.push({ description: "", price: 0 }); renderItems(); }
+        function removeItem(index) { items.splice(index, 1); renderItems(); }
+        function updateItem(index, field, value) {
+            if (field === 'desc') items[index].description = value;
+            if (field === 'price') items[index].price = parseFloat(value) || 0;
+            updatePreview();
+        }
+
+        function updatePreview() {
+            document.getElementById("prev-doc-title").innerText = document.getElementById("doc-type").value.toUpperCase();
+            document.getElementById("prev-client").innerText = document.getElementById("client-name").value || "-";
+            document.getElementById("prev-phone").innerText = document.getElementById("client-phone").value || "-";
+            document.getElementById("prev-device").innerText = document.getElementById("client-device").value || "-";
+            document.getElementById("prev-number").innerText = document.getElementById("doc-number").value || "-";
+            document.getElementById("prev-validity").innerText = document.getElementById("doc-validity").value;
+            document.getElementById("prev-payment").innerText = document.getElementById("payment-mode").value;
+
+            let tbody = document.getElementById("prev-items-body");
+            tbody.innerHTML = "";
+            let brutTotal = 0;
+
+            items.forEach(item => {
+                brutTotal += item.price;
+                tbody.innerHTML += `<tr><td>${item.description || "Prestation"}</td><td>${item.price.toFixed(2)} €</td></tr>`;
+            });
+
+            let hasDiscount = document.getElementById("discount-check").checked;
+            let discountAmount = hasDiscount ? brutTotal * 0.20 : 0;
+            let netTotal = brutTotal - discountAmount;
+            let deposit = parseFloat(document.getElementById("deposit-amount").value) || 0;
+            let dueAmount = netTotal - deposit;
+
+            document.getElementById("prev-brut").innerText = brutTotal.toFixed(2) + " €";
+            document.getElementById("row-discount").style.display = hasDiscount ? "flex" : "none";
+            document.getElementById("prev-discount").innerText = "-" + discountAmount.toFixed(2) + " €";
+            document.getElementById("prev-net").innerText = netTotal.toFixed(2) + " €";
+            document.getElementById("prev-deposit").innerText = deposit.toFixed(2) + " €";
+            document.getElementById("prev-due").innerText = dueAmount.toFixed(2) + " €";
+        }
+
+        function saveDocumentToCloud() {
+            const docData = {
+                docType: document.getElementById("doc-type").value,
+                docNumber: document.getElementById("doc-number").value || "SANS-NUMERO",
+                clientName: document.getElementById("client-name").value,
+                clientPhone: document.getElementById("client-phone").value,
+                clientDevice: document.getElementById("client-device").value,
+                discount: document.getElementById("discount-check").checked,
+                deposit: parseFloat(document.getElementById("deposit-amount").value) || 0,
+                paymentMode: document.getElementById("payment-mode").value,
+                validity: document.getElementById("doc-validity").value,
+                items: items,
+                createdAt: new Date().toISOString()
+            };
+
+            db.collection("documents").doc(docData.docNumber).set(docData)
+                .then(() => alert("✅ Document sauvegardé dans le Cloud !"))
+                .catch(err => alert("❌ Erreur de sauvegarde : " + err.message));
+        }
+
+        function loadDocumentsFromCloud() {
+            db.collection("documents").orderBy("createdAt", "desc").onSnapshot(snapshot => {
+                const container = document.getElementById("history-container");
+                if (snapshot.empty) {
+                    container.innerHTML = "<p style='font-size:13px; color:#64748b;'>Aucun document sauvegardé pour l'instant.</p>";
+                    return;
+                }
+                container.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    container.innerHTML += `
+                        <div class="history-item">
+                            <div class="history-item-info">
+                                <strong>${data.docType} N° ${data.docNumber}</strong> - ${data.clientName || 'Client inconnu'}<br>
+                                <small>${data.clientDevice || ''}</small>
+                            </div>
+                            <div class="history-item-actions">
+                                <button class="btn-sm btn-load" onclick='loadSingleDoc(${JSON.stringify(data)})'>Ouvrir</button>
+                                <button class="btn-sm btn-del" onclick="deleteDoc('${doc.id}')">X</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function loadSingleDoc(data) {
+            document.getElementById("doc-type").value = data.docType;
+            document.getElementById("doc-number").value = data.docNumber;
+            document.getElementById("client-name").value = data.clientName;
+            document.getElementById("client-phone").value = data.clientPhone;
+            document.getElementById("client-device").value = data.clientDevice;
+            document.getElementById("discount-check").checked = data.discount;
+            document.getElementById("deposit-amount").value = data.deposit;
+            document.getElementById("payment-mode").value = data.paymentMode;
+            document.getElementById("doc-validity").value = data.validity;
+            items = data.items || [];
+            renderItems();
+        }
+
+        function deleteDoc(id) {
+            if (confirm("Voulez-vous supprimer ce document ?")) {
+                db.collection("documents").doc(id).delete();
+            }
+        }
+    </script>
+</body>
+</html>
